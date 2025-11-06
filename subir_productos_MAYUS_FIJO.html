@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SUBIDA FIRESTORE | BD BOTANAS RIKYS</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // 🔑 CONFIG FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyAc-BvWEJ-bxT91qK__m742tOGYFTz8h7M",
+  authDomain: "bd-botanas-rikys.firebaseapp.com",
+  projectId: "bd-botanas-rikys",
+  storageBucket: "bd-botanas-rikys.appspot.com", // 👈 aquí corregido (.appspot.com)
+  messagingSenderId: "694424815583", // 👈 asegúrate que tenga coma al final
+  appId: "1:694424815583:web:04bc77bdfc4fbd4629e66a",
+  measurementId: "G-8MNC3KE0Z2"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 📋 LISTA DE PRODUCTOS (ya en MAYÚSCULAS)
+    const productos = [
+      { producto: "CACAHUATE CANTINERO", costo: 14.44, precio_cliente: 17.00 },
+      { producto: "CACAHUATE MIXTO", costo: 14.28, precio_cliente: 17.00 },
+      { producto: "CAMARON EN ESTUCHE", costo: 28.90, precio_cliente: 35.00 },
+      { producto: "CAMARON SECO .22 G", costo: 18.78, precio_cliente: 22.00 },
+      { producto: "CARNE DESHEBRADA GDE 9PZ", costo: 19.34, precio_cliente: 23.00 },
+      { producto: "CARNE DESHEBRADA MED 12PZ", costo: 14.68, precio_cliente: 17.00 },
+      { producto: "CARNE ENTERA C/SALSA GDE.", costo: 18.98, precio_cliente: 23.00 },
+      { producto: "CARNE SECA ZARAZA", costo: 25.21, precio_cliente: 32.00 },
+      { producto: "CHARAL FRITO", costo: 17.33, precio_cliente: 20.00 },
+      { producto: "FRITO C/CACAHUATE MED.", costo: 15.09, precio_cliente: 18.00 },
+      { producto: "TOTOPO C/AJO N.", costo: 18.55, precio_cliente: 22.00 },
+      { producto: "PISTACHE MEDIANO", costo: 20.36, precio_cliente: 25.00 },
+      { producto: "SEMILLA DE CALABAZA", costo: 14.38, precio_cliente: 17.00 },
+      { producto: "BOTANA SURTIDA", costo: 29.90, precio_cliente: 38.00 },
+      { producto: "CRANCKLING", costo: 23.27, precio_cliente: 29.00 },
+      { producto: "VASO C/CAMARON SECO", costo: 30.35, precio_cliente: 36.00 },
+      { producto: "VASO C/CARNE SECA", costo: 44.44, precio_cliente: 58.00 },
+      { producto: "PRODUCTO INDIVIDUAL", costo: 23.18, precio_cliente: 29.00 },
+      { producto: "PIMIENTA ENTERA", costo: 9.38, precio_cliente: 10.00 },
+      { producto: "PIMIENTA MOLIDA", costo: 9.35, precio_cliente: 10.00 },
+      { producto: "COMINO MOLIDO", costo: 9.28, precio_cliente: 10.00 },
+      { producto: "ANIS", costo: 9.13, precio_cliente: 10.00 },
+      { producto: "CANELA ENTERA", costo: 11.68, precio_cliente: 14.00 },
+      { producto: "CANELA EN ROLLO", costo: 12.61, precio_cliente: 15.00 },
+      { producto: "CHILE JAPONES", costo: 15.45, precio_cliente: 20.00 },
+      { producto: "LITRO GOMITAS", costo: 89.57, precio_cliente: 129.00 },
+      { producto: "TAMARINDO TARUGO", costo: 128.85, precio_cliente: 170.00 },
+      { producto: "CHICLE CANELS", costo: 51.50, precio_cliente: 68.00 },
+      { producto: "MAZAPAN 30PZ", costo: 94.85, precio_cliente: 134.00 },
+      { producto: "GOMITAS LUCKI 1K", costo: 86.86, precio_cliente: 121.00 },
+      { producto: "MINI CHICLE TATTO", costo: 83.33, precio_cliente: 116.00 },
+      { producto: "PALETAS C/40PZ", costo: 39.28, precio_cliente: 52.00 },
+      { producto: "VELAGOMA", costo: 129.32, precio_cliente: 172.00 },
+      { producto: "CHOCOLATE NUGS", costo: 55.25, precio_cliente: 75.00 },
+      { producto: "DOMO EMPANADA NUEZ GDE.", costo: 122.32, precio_cliente: 160.00 },
+      { producto: "GUSANO CAJETA MED 30PZ", costo: 75.00, precio_cliente: 136.00 },
+      { producto: "PALETA VERO PINTA AZUL", costo: 82.87, precio_cliente: 112.00 },
+      { producto: "PALETA VERO MANGO", costo: 78.25, precio_cliente: 108.00 },
+      { producto: "TOTOPO C/AJO GDE.", costo: 22.45, precio_cliente: 38.00 },
+      { producto: "PAQUETE DE ENCENDEDORES", costo: 117.25, precio_cliente: 160.00 }
+    ];
+
+    // 🚀 SUBIDA DIRECTA SIN NORMALIZAR
+    async function subirProductos() {
+      const colRef = collection(db, "PRODUCTOS");
+      let count = 0;
+
+      for (const p of productos) {
+        await addDoc(colRef, p);
+        count++;
+        console.log(`✅ (${count}) ${p.producto} agregado`);
+      }
+
+      alert("🎉 TODOS LOS PRODUCTOS EN MAYÚSCULAS HAN SIDO SUBIDOS A FIRESTORE.");
+    }
+
+    subirProductos();
+  </script>
+</head>
+<body style="font-family: Poppins, sans-serif; text-align:center; margin-top:60px;">
+  <h2>🔥 SUBIENDO PRODUCTOS EN MAYÚSCULAS A FIRESTORE...</h2>
+  <p>Abre la consola (F12) para ver el progreso.</p>
+</body>
+</html>
