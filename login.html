@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🔐 Acceso – Rikys POS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <!-- Fuente -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --rojo: #C62828;
+      --amarillo: #F9A825;
+      --fondo: #FFF8E1;
+      --texto: #2B2B2B;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom right, var(--rojo), var(--amarillo));
+      color: var(--texto);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .login-box {
+      background: var(--fondo);
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      width: 340px;
+      padding: 40px 30px;
+      text-align: center;
+    }
+
+    h1 {
+      color: var(--rojo);
+      font-size: 26px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    button {
+      background: var(--rojo);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 25px;
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 95%;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #A51717;
+    }
+
+    .status {
+      font-size: 14px;
+      margin-top: 15px;
+      color: var(--rojo);
+      font-weight: 500;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 15px;
+      font-size: 13px;
+      color: #fff;
+      opacity: 0.9;
+    }
+
+    .logo {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--amarillo) 60%, var(--rojo) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 26px;
+      margin: 0 auto 15px auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <div class="logo">R</div>
+    <h1>Rikys POS</h1>
+    <input id="usuario" placeholder="Usuario"><br>
+    <input id="password" placeholder="Contraseña" type="password"><br>
+    <button onclick="login()">Entrar</button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="footer">© 2025 BOTANAS RIKYS | PROVSOFT</div>
+
+  <script>
+    // 🔑 Configuración Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAc-BvWEJ-bxT91qK__m742tOGYFTz8h7M",
+      authDomain: "bd-botanas-rikys.firebaseapp.com",
+      projectId: "bd-botanas-rikys",
+      storageBucket: "bd-botanas-rikys.firebasestorage.app",
+      messagingSenderId: "694424815583",
+      appId: "1:694424815583:web:04bc77bdfc4fbd4629e66a",
+      measurementId: "G-8MNC3KE0Z2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function login() {
+      const usuario = document.getElementById("usuario").value.trim().toUpperCase();
+      const password = document.getElementById("password").value.trim();
+      const status = document.getElementById("status");
+
+      if (!usuario || !password) {
+        status.innerHTML = "⚠️ Escribe usuario y contraseña.";
+        return;
+      }
+
+      status.innerHTML = "⏳ Verificando...";
+      try {
+        const snap = await db.collection("USUARIOS")
+          .where("usuario", "==", usuario)
+          .where("password", "==", password)
+          .where("activo", "==", true)
+          .get();
+
+        if (!snap.empty) {
+          const data = snap.docs[0].data();
+          localStorage.setItem("usuario", data.usuario);
+          localStorage.setItem("rol", data.rol);
+          status.innerHTML = "✅ Bienvenido " + data.usuario;
+          setTimeout(() => window.location.href = "menu.html", 800);
+        } else {
+          status.innerHTML = "❌ Credenciales incorrectas.";
+        }
+      } catch (e) {
+        status.innerHTML = "🚫 Error de conexión con Firebase.";
+        console.error(e);
+      }
+    }
+
+    // 🧠 Registro Service Worker (para PWA)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log("Service Worker activo"))
+        .catch(err => console.error("Error SW:", err));
+    }
+
+    // 🔌 Estado de red
+    window.addEventListener("online", () => {
+      document.getElementById("status").innerHTML = "🟢 Conectado";
+    });
+    window.addEventListener("offline", () => {
+      document.getElementById("status").innerHTML = "🔴 Sin conexión";
+    });
+  </script>
+
+</body>
+</html>
