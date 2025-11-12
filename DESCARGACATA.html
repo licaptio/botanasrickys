@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>📦 Exportar Catálogo – BD BOTANAS RIKYS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import * as XLSX from "https://cdn.sheetjs.com/xlsx-latest/package/xlsx.mjs";
+
+    // 🔐 Configuración de tu proyecto Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAc-BvWEJ-bxT91qK__m742tOGYFTz8h7M",
+      authDomain: "bd-botanas-rikys.firebaseapp.com",
+      projectId: "bd-botanas-rikys",
+      storageBucket: "bd-botanas-rikys.firebasestorage.app",
+      messagingSenderId: "694424815583",
+      appId: "1:694424815583:web:04bc77bdfc4fbd4629e66a",
+      measurementId: "G-8MNC3KE0Z2"
+    };
+
+    // Inicializa Firebase y Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 📥 Función para descargar el catálogo
+    async function descargarCatalogo() {
+      const boton = document.getElementById("btnDescargar");
+      boton.disabled = true;
+      boton.innerText = "Descargando...";
+
+      try {
+        const productosRef = collection(db, "PRODUCTOS");
+        const snapshot = await getDocs(productosRef);
+
+        const data = [];
+        snapshot.forEach(doc => {
+          const item = doc.data();
+          data.push({
+            ID: doc.id,
+            Producto: item.producto || "",
+            Costo: item.costo || "",
+            Precio_Cliente: item.precio_cliente || ""
+          });
+        });
+
+        // 📊 Crear y exportar Excel
+        const hoja = XLSX.utils.json_to_sheet(data);
+        const libro = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(libro, hoja, "Catálogo");
+        XLSX.writeFile(libro, "Catalogo_Botanas_Rikys.xlsx");
+
+      } catch (error) {
+        alert("❌ Error al descargar: " + error.message);
+        console.error(error);
+      }
+
+      boton.disabled = false;
+      boton.innerText = "Descargar Catálogo";
+    }
+
+    window.descargarCatalogo = descargarCatalogo;
+  </script>
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      text-align: center;
+      background: #f5f7fa;
+      color: #222;
+      padding-top: 80px;
+    }
+    h1 {
+      color: #0c6cbd;
+      font-size: 24px;
+    }
+    button {
+      background-color: #0c6cbd;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #084c8c;
+    }
+  </style>
+</head>
+<body>
+  <h1>📦 Exportar Catálogo desde Firebase</h1>
+  <p>Haz clic para descargar los productos actuales (producto, costo y precio_cliente).</p>
+  <button id="btnDescargar" onclick="descargarCatalogo()">Descargar Catálogo</button>
+</body>
+</html>
