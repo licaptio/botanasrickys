@@ -1,26 +1,240 @@
-{
-  "fecha": "2025-10-29T22:20:01.045Z",
-  "usuario": "GERARDO",
-  "departamento": "DULCES",
-  "productos": [
-    {
-      "id": "0GESInlAKrdhKRgNJH66",
-      "nombre": "CHOCOLATE NUGS",
-      "cantidad": 3,
-      "precio_cliente": 75
-    },
-    {
-      "id": "8p0bVLMcXUTNxcvbxWBy",
-      "nombre": "PALETA VERO MANGO",
-      "cantidad": 2,
-      "precio_cliente": 8
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>💳 Cobrar – Rikys POS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --rojo: #C62828;
+      --amarillo: #F9A825;
+      --fondo: #FFF8E1;
+      --texto: #2B2B2B;
     }
-  ],
-  "subtotales": {
-    "DULCES": 241
-  },
-  "total": 241,
-  "tipo_pago": "Efectivo",
-  "estado": "Completada",
-  "timestamp": "2025-10-29T22:20:01Z"
-}
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: var(--fondo);
+      color: var(--texto);
+      text-align: center;
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: linear-gradient(to right, var(--rojo), var(--amarillo));
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    button.volver {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button.volver:hover {
+      background: rgba(255,255,255,0.4);
+    }
+
+    h2 {
+      color: var(--rojo);
+      margin-top: 20px;
+    }
+
+    #ticket {
+      margin: 20px auto;
+      max-width: 420px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      padding: 15px 20px;
+      text-align: left;
+    }
+
+    #ticket div {
+      margin-bottom: 5px;
+    }
+
+    .total {
+      border-top: 2px solid var(--amarillo);
+      margin-top: 10px;
+      padding-top: 8px;
+      font-weight: 600;
+      font-size: 17px;
+      color: var(--rojo);
+      text-align: right;
+    }
+
+    .pago {
+      margin-top: 15px;
+      font-size: 15px;
+    }
+
+    select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    button.cobrar {
+      margin-top: 20px;
+      background: var(--rojo);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button.cobrar:hover {
+      background: #A51717;
+    }
+
+    .mensaje {
+      margin-top: 15px;
+      font-weight: 600;
+      color: var(--rojo);
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>💳 Cobro de Venta</h1>
+    <button class="volver" onclick="location.href='productos.html'">⬅ Volver</button>
+  </header>
+
+  <h2>Resumen de Compra</h2>
+
+  <div id="ticket"></div>
+
+  <div class="pago">
+    <label for="tipoPago"><strong>Método de pago:</strong></label><br>
+    <select id="tipoPago">
+      <option value="Efectivo">Efectivo</option>
+      <option value="Transferencia">Transferencia</option>
+      <option value="Tarjeta">Tarjeta</option>
+    </select>
+  </div>
+
+  <button class="cobrar" onclick="confirmarVenta()">✅ Confirmar Venta</button>
+  <div id="mensaje" class="mensaje"></div>
+
+  <div class="footer">© 2025 BOTANAS RIKYS | PROVSOFT</div>
+
+  <script>
+    // 🔑 Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAc-BvWEJ-bxT91qK__m742tOGYFTz8h7M",
+      authDomain: "bd-botanas-rikys.firebaseapp.com",
+      projectId: "bd-botanas-rikys",
+      storageBucket: "bd-botanas-rikys.firebasestorage.app",
+      messagingSenderId: "694424815583",
+      appId: "1:694424815583:web:04bc77bdfc4fbd4629e66a",
+      measurementId: "G-8MNC3KE0Z2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 🧾 Recuperar datos
+    const carrito = JSON.parse(localStorage.getItem("carrito") || "[]");
+    const usuario = localStorage.getItem("usuario") || "Desconocido";
+    const dep = localStorage.getItem("departamentoActual") || "General";
+
+    // 🧮 Calcular totales
+    const total = carrito.reduce((a,b)=>a+b.precio_cliente*b.cantidad,0);
+
+    // 📦 Mostrar ticket
+    const t = document.getElementById("ticket");
+    if (carrito.length === 0) {
+      t.innerHTML = "<p style='text-align:center;'>No hay productos en el carrito.</p>";
+    } else {
+      t.innerHTML = `<div><strong>Departamento:</strong> ${dep}</div>`;
+      t.innerHTML += `<div><strong>Usuario:</strong> ${usuario}</div><hr>`;
+      carrito.forEach(p=>{
+        t.innerHTML += `<div>${p.cantidad}x ${p.nombre} <span style='float:right;'>$${(p.precio_cliente*p.cantidad).toFixed(2)}</span></div>`;
+      });
+      t.innerHTML += `<div class='total'>Total: $${total.toFixed(2)}</div>`;
+    }
+
+    async function confirmarVenta() {
+      const tipo = document.getElementById("tipoPago").value;
+      const mensaje = document.getElementById("mensaje");
+
+      if (carrito.length === 0) {
+        mensaje.innerHTML = "⚠️ No hay productos para cobrar.";
+        return;
+      }
+
+      // 🧩 Cálculo adicional: subtotal por departamento
+      const subtotalDepto = {};
+      carrito.forEach(p => {
+        const d = dep || "GENERAL";
+        subtotalDepto[d] = (subtotalDepto[d] || 0) + (p.precio_cliente * p.cantidad);
+      });
+
+      const venta = {
+        fecha: new Date().toISOString(),
+        usuario,
+        departamento: dep,
+        productos: carrito,
+        total,
+        subtotales: subtotalDepto,
+        tipo_pago: tipo,
+        estado: "Completada",
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      mensaje.innerHTML = "⏳ Guardando venta...";
+      try {
+        await db.collection("VENTASRICKYS").add(venta);
+        mensaje.innerHTML = "✅ Venta registrada correctamente.";
+
+        // Limpiar datos
+        localStorage.removeItem("carrito");
+        localStorage.removeItem("departamentoActual");
+        setTimeout(()=> location.href = "menu.html", 1500);
+      } catch (e) {
+        console.error(e);
+        mensaje.innerHTML = "❌ Error al guardar la venta.";
+      }
+    }
+
+    // 🧩 Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</body>
+</html>
