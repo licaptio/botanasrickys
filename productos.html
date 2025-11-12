@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🧺 Productos – Rikys POS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --rojo: #C62828;
+      --amarillo: #F9A825;
+      --fondo: #FFF8E1;
+      --texto: #2B2B2B;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: var(--fondo);
+      color: var(--texto);
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: linear-gradient(to right, var(--rojo), var(--amarillo));
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .volver {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .volver:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .productos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 15px;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.2s;
+      border-top: 4px solid var(--amarillo);
+    }
+
+    .card:hover {
+      transform: scale(1.04);
+      border-top: 4px solid var(--rojo);
+    }
+
+    .nombre {
+      font-weight: 600;
+      color: var(--rojo);
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .precio {
+      color: #333;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    button {
+      background: var(--rojo);
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #A51717;
+    }
+
+    .total-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: var(--rojo);
+      color: white;
+      text-align: center;
+      padding: 12px 0;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .total-bar:hover {
+      background: var(--amarillo);
+      color: var(--texto);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1 id="titulo">Productos</h1>
+    <button class="volver" onclick="location.href='menu.html'">⬅ Volver</button>
+  </header>
+
+  <div id="productos" class="productos"></div>
+
+  <div id="totalBar" class="total-bar">🧾 Total: $0.00</div>
+
+  <script>
+    // 🔑 Configuración Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAc-BvWEJ-bxT91qK__m742tOGYFTz8h7M",
+      authDomain: "bd-botanas-rikys.firebaseapp.com",
+      projectId: "bd-botanas-rikys",
+      storageBucket: "bd-botanas-rikys.firebasestorage.app",
+      messagingSenderId: "694424815583",
+      appId: "1:694424815583:web:04bc77bdfc4fbd4629e66a",
+      measurementId: "G-8MNC3KE0Z2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 🧠 Cargar el departamento actual
+    const dep = localStorage.getItem("departamentoActual");
+    const titulo = document.getElementById("titulo");
+    if (dep) titulo.innerText = `📦 ${dep}`;
+
+    let carrito = JSON.parse(localStorage.getItem("carrito") || "[]");
+
+    function actualizarTotal() {
+      const total = carrito.reduce((a,b)=>a+b.precio_cliente*b.cantidad,0);
+      document.getElementById("totalBar").innerText = `🧾 Total: $${total.toFixed(2)} (Cobrar)`;
+      localStorage.setItem("carrito", JSON.stringify(carrito));
+    }
+
+    async function cargarProductos() {
+      const cont = document.getElementById("productos");
+      cont.innerHTML = "<p>Cargando productos...</p>";
+
+      try {
+        // 🔠 Ordenados por nombre A → Z
+        const snap = await db.collection("PRODUCTOS")
+          .where("departamento", "==", dep)
+          .orderBy("producto", "asc")
+          .get();
+
+        cont.innerHTML = "";
+
+        snap.forEach(doc => {
+          const p = doc.data();
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerHTML = `
+            <div class="nombre">${p.producto}</div>
+            <div class="precio">💰 $${p.precio_cliente?.toFixed(2) || "0.00"}</div>
+            <button onclick="agregar('${doc.id}', '${p.producto}', ${p.precio_cliente})">Agregar</button>
+          `;
+          cont.appendChild(div);
+        });
+      } catch (err) {
+        console.error(err);
+        cont.innerHTML = "<p style='color:red;'>⚠️ Error al cargar productos</p>";
+      }
+    }
+
+    function agregar(id, nombre, precio) {
+      const item = carrito.find(p => p.id === id);
+      if (item) item.cantidad++;
+      else carrito.push({ id, nombre, precio_cliente: precio, cantidad: 1 });
+      actualizarTotal();
+    }
+
+    document.getElementById("totalBar").onclick = () => {
+      if (carrito.length === 0) {
+        alert("No hay productos en el carrito.");
+        return;
+      }
+      window.location.href = "cobrar.html";
+    };
+
+    cargarProductos();
+    actualizarTotal();
+
+    // 🧩 Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</body>
+</html>
