@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>📦 Departamentos – Rikys POS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --rojo: #C62828;
+      --amarillo: #F9A825;
+      --fondo: #FFF8E1;
+      --texto: #2B2B2B;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: var(--fondo);
+      color: var(--texto);
+    }
+
+    header {
+      background: linear-gradient(to right, var(--rojo), var(--amarillo));
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    header h1 {
+      font-size: 20px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    header span {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .departamentos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+      text-align: center;
+      padding: 20px 10px;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      border-top: 4px solid var(--amarillo);
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 14px rgba(0,0,0,0.2);
+      border-top: 4px solid var(--rojo);
+    }
+
+    .emoji {
+      font-size: 38px;
+    }
+
+    h3 {
+      margin: 8px 0 0 0;
+      color: var(--rojo);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 13px;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    .cerrar {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.2s;
+    }
+
+    .cerrar:hover {
+      background: rgba(255,255,255,0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🛒 Rikys POS</h1>
+    <div>
+      <span id="nombreUsuario">Usuario</span>
+      <button class="cerrar" onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+  <h2 style="text-align:center; margin-top:15px; color:var(--rojo);">Selecciona un Departamento</h2>
+
+  <div id="departamentos" class="departamentos"></div>
+
+  <div class="footer">© 2025 BOTANAS RIKYS | PROVSOFT</div>
+
+  <script>
+    // 🔑 Configuración Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAc-BvWEJ-bxT91qK__m742tOGYFTz8h7M",
+      authDomain: "bd-botanas-rikys.firebaseapp.com",
+      projectId: "bd-botanas-rikys",
+      storageBucket: "bd-botanas-rikys.firebasestorage.app",
+      messagingSenderId: "694424815583",
+      appId: "1:694424815583:web:04bc77bdfc4fbd4629e66a",
+      measurementId: "G-8MNC3KE0Z2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 🧠 Verificar sesión
+    const usuario = localStorage.getItem("usuario");
+    if (!usuario) window.location.href = "login.html";
+    document.getElementById("nombreUsuario").innerText = usuario;
+
+    // 🚪 Cerrar sesión
+    function logout() {
+      localStorage.removeItem("usuario");
+      localStorage.removeItem("rol");
+      window.location.href = "login.html";
+    }
+
+    // 📦 Cargar departamentos desde Firestore
+    async function cargarDepartamentos() {
+      const cont = document.getElementById("departamentos");
+      cont.innerHTML = "<p>Cargando departamentos...</p>";
+
+      try {
+        const snapshot = await db.collection("DEPARTAMENTOS").orderBy("orden").get();
+        cont.innerHTML = "";
+
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerHTML = `
+            <div class="emoji">${d.icono || "📦"}</div>
+            <h3>${d.nombre}</h3>
+          `;
+          div.onclick = () => {
+            localStorage.setItem("departamentoActual", d.nombre);
+            window.location.href = "productos.html";
+          };
+          cont.appendChild(div);
+        });
+      } catch (err) {
+        console.error(err);
+        cont.innerHTML = "<p style='color:red;'>⚠️ Error al cargar los departamentos</p>";
+      }
+    }
+
+    cargarDepartamentos();
+
+    // 🧩 Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+
+</body>
+</html>
